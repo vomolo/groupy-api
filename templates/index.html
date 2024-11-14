@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Groupie Trackers</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <header>
+        <div id="header" class="container text-center">
+            <h1 class="font-weight-bold display-4">Groupie Trackers</h1>
+        </div>        
+        <!-- <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-11">
+                    <form class="d-flex" role="search" onsubmit="return false;">
+                        <input class="form-control me-2" id="searchInput" type="search" placeholder="Search" aria-label="Search">
+                    </form>
+                </div>
+            </div>
+        </div>
+            -->
+            <div class="container mt-4">
+                <div class="search-bar d-flex align-items-center">
+                    <input type="text" id="searchInput" placeholder="Search artist, member, location, etc." class="form-control me-2">
+                    <button id="searchButton" class="btn btn-primary">Search</button>
+                </div>
+                <div id="suggestions" class="suggestions-dropdown" style="background-color: #ffffff; max-height: 200px; overflow-y: auto;">
+                </div>
+            </div>
+                     
+        
+    </header>
+
+    <main>
+        <div class="container mt-5">
+            <div class="row" id="artistCards" style="padding: 10px;">
+                {{range .}}
+                <div class="col-md-4 artist-card" data-name="{{.Name}}">
+                    <div class="card">
+                        <img src="{{.Image}}" class="card-img-top" alt="{{.Name}}">
+                        <div class="card-body">
+                            <h5 class="card-title">{{.Name}}</h5>
+                            <p class="card-text"><strong>First album:</strong> {{.FirstAlbum}}</p>
+                            <p class="card-text"><strong>Members:</strong> {{range $index, $member := .Members}}{{if $index}}, {{end}}{{$member}}{{end}}</p>
+                            
+                            <!-- Buttons responsive: stacked on small screens, inline on large screens with spacing -->
+                            <div class="d-flex flex-column flex-lg-row justify-content-between">
+                                <button class="btn btn-primary mb-2 mb-lg-0 me-lg-2 w-100 w-lg-auto locationBtn" data-id="{{.ID}}">Location</button>
+                                <button class="btn btn-primary mb-2 mb-lg-0 me-lg-2 w-100 w-lg-auto dateBtn" data-id="{{.ID}}">Dates</button>
+                                <button class="btn btn-primary mb-2 mb-lg-0 me-lg-2 w-100 w-lg-auto relationBtn" data-id="{{.ID}}">Relations</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+        </div>
+        
+    </main>
+
+    <footer>
+        <div class="container text-center" id="footer">
+            <div class="row">
+                <p>&copy; 2024 Groupie Trackers. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modal for displaying location data -->
+    <div class="modal fade" id="locationModal" tabindex="-1" aria-labelledby="locationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="locationModalLabel">Concert Locations</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="locationModalBody">
+                    <!-- Location and date data will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+     <!-- Modal for displaying date data -->
+    <div class="modal fade" id="dateModal" tabindex="-1" aria-labelledby="dateModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="dateModalLabel">Concert Dates</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="dateModalBody">
+                    <!-- Date data will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+     <!-- Modal for displaying relation data -->
+     <div class="modal fade" id="relationModal" tabindex="-1" aria-labelledby="relationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="drelationModalLabel">Relations</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="relationModalBody">
+                    <!-- Date data will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    
+    <script>
+        // Define a sound
+        const sound = new Audio('/static/sound1.wav');
+    
+        // Listen for input changes in the search field
+        document.getElementById('searchInput').addEventListener('input', function () {
+            const query = this.value.toLowerCase();
+            const suggestionsContainer = document.getElementById('suggestions');
+    
+            if (!query) {
+                // Clear suggestions and reset artist cards if the input is empty
+                suggestionsContainer.innerHTML = '';
+                suggestionsContainer.style.display = 'none';
+                resetArtistCards();
+                return;
+            }
+    
+            // Fetch suggestions based on the input
+            fetch(`/search?q=${query}`)
+                .then(response => response.json())
+                .then(data => {
+                    suggestionsContainer.innerHTML = ''; // Clear previous suggestions
+                    suggestionsContainer.style.display = 'block'; // Ensure container is visible
+    
+                    data.forEach(item => {
+                        const suggestion = document.createElement('div');
+                        suggestion.classList.add('suggestion-item');
+                        suggestion.innerHTML = `${item.name} - <span class="suggestion-type">${item.category}</span>`;
+    
+                        suggestion.addEventListener('click', () => {
+                            // Fill input with selected suggestion and hide suggestions
+                            document.getElementById('searchInput').value = item.name;
+                            suggestionsContainer.innerHTML = '';
+                            suggestionsContainer.style.display = 'none';
+                            // handleSearch(item.name); // Trigger search with the selected suggestion
+                        });
+    
+                        suggestionsContainer.appendChild(suggestion);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching suggestions:', error);
+                });
+        });
+    
+        // Handle search button click to filter and display matching artist cards
+        document.getElementById('searchButton').addEventListener('click', function () {
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            handleSearch(searchQuery); // Call handleSearch function
+        });
+    
+        // Function to handle search and display matching cards
+        function handleSearch(searchQuery) {
+            if (!searchQuery) {
+                resetArtistCards();
+                return;
+            }
+    
+            // Fetch data from /getArtists route to find artists matching the search query
+            fetch(`/getArtists?q=${searchQuery}`)
+                .then(response => response.json())
+                .then(data => {
+
+                    // Check if data contains any artists and display them
+                    if (data && data.length > 0) {
+                        displayMatchingCards(data); // Use the existing display function
+                    } else {
+                        showNoResultsMessage();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching artist results:', error);
+                });
+        }
+    
+        // Function to reset all artist cards to visible
+        function resetArtistCards() {
+            const artistCards = document.querySelectorAll('.artist-card');
+            artistCards.forEach(card => {
+                card.style.opacity = '1';
+                card.style.position = 'relative';
+                card.style.height = 'auto';
+                card.style.marginBottom = '10px';
+            });
+    
+            const noResultsMessage = document.getElementById('noResultsMessage');
+            if (noResultsMessage) {
+                noResultsMessage.style.display = 'none';
+            }
+        }
+    
+        // Function to display matching artist cards based on the artist ID
+        function displayMatchingCards(artists) {
+            console.log(artists); // Ensure this is an array of artist objects
+            const artistCards = document.querySelectorAll('.artist-card');
+
+            artistCards.forEach(card => {
+                // Get the name from the card's data attribute
+                const cardArtistName = card.getAttribute('data-name')?.toLowerCase(); // Use optional chaining
+
+                if (cardArtistName) { // Check if cardArtistName is defined
+                    // Check if the artist exists in the passed artists array
+                    const artistFound = artists.some(artist => artist.Artist.name?.toLowerCase() === cardArtistName);
+
+                    if (artistFound) {
+                        // Display the card if there is a match
+                        card.style.opacity = '1';
+                        card.style.position = 'relative';
+                        card.style.height = 'auto';
+                        card.style.marginBottom = '10px';
+                    } else {
+                        // Hide the card if there is no match
+                        card.style.opacity = '0';
+                        card.style.position = 'absolute';
+                        card.style.height = '0';
+                        card.style.marginBottom = '0';
+                    }
+                } else {
+                    // If cardArtistName is undefined, hide the card
+                    card.style.opacity = '0';
+                    card.style.position = 'absolute';
+                    card.style.height = '0';
+                    card.style.marginBottom = '0';
+                }
+            });
+
+            // Show a message if no artists were found
+            if (artists.length === 0) showNoResultsMessage();
+        }
+
+        // Function to show a no-results message
+        function showNoResultsMessage() {
+            const noResultsMessage = document.getElementById('noResultsMessage');
+            if (!noResultsMessage) {
+                const message = document.createElement('div');
+                message.id = 'noResultsMessage';
+                message.classList.add('alert', 'alert-warning', 'mt-3');
+                message.innerText = 'No artists found matching your search.';
+                document.getElementById('artistCards').appendChild(message);
+            } else {
+                noResultsMessage.style.display = 'block';
+            }
+        }
+    
+        // Event listeners for modal buttons
+        document.querySelectorAll('.locationBtn').forEach(button => {
+            button.addEventListener('click', function() {
+                sound.play();
+                const artistId = this.getAttribute('data-id');
+                const locationModalBody = document.getElementById('locationModalBody');
+                locationModalBody.innerHTML = '<table class="table table-striped"><thead><tr><th>Location</th></tr></thead><tbody id="locationTableBody"></tbody></table>';
+    
+                // Fetch location data
+                fetch(`/locations?id=${artistId}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(locationData => {
+                        const locationTableBody = document.getElementById('locationTableBody');
+                        let html = '';
+                        if (locationData.locations && Array.isArray(locationData.locations)) {
+                            locationData.locations.forEach((location) => {
+                                html += `<tr><td>${location}</td></tr>`;
+                            });
+                            locationTableBody.innerHTML = html;
+                        } else {
+                            locationTableBody.innerHTML = '<tr><td colspan="2">No location data available</td></tr>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching data:', error);
+                        locationModalBody.innerHTML = '<p>Error fetching data. Please try again later.</p>';
+                    });
+                // Show the modal
+                const locationModal = new bootstrap.Modal(document.getElementById('locationModal'));
+                locationModal.show();
+            });
+        });
+    
+        document.querySelectorAll('.dateBtn').forEach(button => {
+            button.addEventListener('click', function() {
+                sound.play();
+                const artistId = this.getAttribute('data-id');
+                const dateModalBody = document.getElementById('dateModalBody');
+                dateModalBody.innerHTML = '<table class="table table-striped"><thead><tr><th>Date</th></tr></thead><tbody id="dateTableBody"></tbody></table>';
+                // Fetch date data
+                fetch(`/dates?id=${artistId}`)
+                    .then(response => response.json())
+                    .then(dateData => {
+                        const dateTableBody = document.getElementById('dateTableBody');
+                        let html = '';
+                        if (dateData.dates && Array.isArray(dateData.dates)) {
+                            dateData.dates.forEach((date) => {
+                                html += `<tr><td>${date}</td></tr>`;
+                            });
+                            dateTableBody.innerHTML = html;
+                        } else {
+                            dateTableBody.innerHTML = '<tr><td colspan="2">No date data available</td></tr>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching data:', error);
+                        dateModalBody.innerHTML = '<p>Error fetching data. Please try again later.</p>';
+                    });
+                // Show the modal
+                const dateModal = new bootstrap.Modal(document.getElementById('dateModal'));
+                dateModal.show();
+            });
+        });
+    
+        // Add event listeners for relation buttons
+        document.querySelectorAll('.relationBtn').forEach((button) => {
+            button.addEventListener('click', function() {
+                sound.play();
+                const artistId = this.getAttribute('data-id');
+                // Clear previous data
+                const relationModalBody = document.getElementById('relationModalBody');
+                relationModalBody.innerHTML = '<table class="table table-striped"><thead><tr><th>Location</th><th>Date</th></tr></thead><tbody id="relationTableBody"></tbody></table>';
+                // Fetch relation data
+                fetch(`/relations?id=${artistId}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(relationData => {
+                        console.log('Received relation data:', relationData);
+                        const relationTableBody = document.getElementById('relationTableBody');
+                        let html = '';
+                        // Check if there are datesLocations
+                        if (relationData.datesLocations && typeof relationData.datesLocations === 'object') {
+                            // Iterate over the map
+                            for (const [location, dates] of Object.entries(relationData.datesLocations)) {
+                                dates.forEach(date => {
+                                    html += `<tr><td>${location}</td><td>${date}</td></tr>`;
+                                });
+                            }
+                            relationTableBody.innerHTML = html;
+                        } else {
+                            relationTableBody.innerHTML = '<tr><td colspan="2">No relation data available</td></tr>';
+                            throw new Error('No relation data available');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching data:', error);
+                        relationModalBody.innerHTML = '<p>Error fetching data. Please try again later.</p>';
+                    });
+                // Show the modal after the data is fetched
+                const relationModal = new bootstrap.Modal(document.getElementById('relationModal'));
+                relationModal.show();
+            });
+        });
+    </script>
+</body>
+</html>
+
+
+    

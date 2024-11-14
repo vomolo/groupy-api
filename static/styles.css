@@ -1,0 +1,135 @@
+html,
+body { 
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-image: url("/static/background.jpg");
+    background-size: cover;       /* Ensure the image covers the entire page */
+    background-position: center;  /* Center the background image */
+    background-repeat: no-repeat; /* Prevent the image from repeating */
+    background-attachment: fixed; 
+}
+
+main {
+    flex: 1;
+    overflow-y: auto;
+}
+
+
+#header {
+    flex-shrink: 0;
+    padding: 20px;
+    background-color: transparent; /* Make the background transparent */
+    background-color: transparent; /* Make the background transparent */
+}
+
+
+#footer {
+    flex-shrink: 0;
+    background-color: transparent; /* Make the background transparent */
+}
+
+/* Add this for the h1 inside the header */
+#header h1 {
+    color: aliceblue; /* Apply the color to the text */
+}
+
+#footer p {
+    color: aliceblue; /* Apply the color to the text */
+}
+
+/* Ensure all cards are flexible and expand based on content */
+.artist-card {
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    margin-bottom: 20px; /* Add margin between cards */
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 300px; /* Restrict width on larger screens */
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    margin: 10px;
+}
+
+/* Remove fixed height and allow card to grow with content */
+.card-img-top {
+    width: 100%;
+    height: 200px; /* Adjust height for consistent image size */
+    object-fit: cover;
+}
+
+/* Ensure card body stretches to fit content */
+.card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Spread out content and buttons */
+    padding: 1rem;
+    height: 300px; /* Set a fixed height */
+    overflow-y: auto; /* Enable scrolling if content overflows */
+}
+
+/* Ensure buttons stay at the bottom */
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: 10px;
+}
+
+.card-title {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.card-text {
+    flex-grow: 1; /* Allow text to grow without affecting the buttons */
+}
+
+.btn {
+    margin: 2.5px; /* Add margin between buttons */
+}
+
+.artist-card:hover .card {
+    transform: translateY(-10px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Media query to adjust for smaller screens */
+@media (max-width: 576px) {
+    .card {
+        width: 100%; /* Ensure cards take full width */
+    }
+
+    .card-img-top {
+        height: 150px; /* Smaller images on small screens */
+    }
+
+    .card-body {
+        padding: 0.75rem; /* Slightly reduce padding for small screens */
+    }
+
+    .btn {
+        width: 100%; /* Full-width buttons on small screens */
+        margin-bottom: 5px;
+    }
+
+    .card-footer {
+        flex-direction: column; /* Stack buttons vertically */
+    }
+    .btn {
+        margin-right: 30px; /* Add margin between buttons */
+    }    
+}
+
